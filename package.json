@@ -3,7 +3,10 @@
   "name": "VolCunt",
   "version": "0.0.1",
   "main": "volumeserver.js",
-  "dependencies": {},
+  "dependencies": {
+    "send": "~0.1.0",
+    "socket.io": "~0.9.13"
+  },
   "devDependencies": {},
   "optionalDependencies": {},
   "engines": {
