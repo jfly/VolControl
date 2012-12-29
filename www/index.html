@@ -5,6 +5,27 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black" />
 
+<style type="text/css">
+body {
+    -webkit-tap-highlight-color: transparent; /* disable save image on long press */
+    -webkit-touch-callout: none; /* disable selection copy/paste */
+    -webkit-user-select: none; /* disable dragging images */
+    -webkit-user-drag: none;
+	margin: 0;
+}
+.volumeArea {
+    height: 100%;
+    width: 100%;
+}
+
+.volumeFill {
+	position: absolute;
+	bottom: 0;
+
+    width: 100%;
+}
+</style>
+
 <!-- Stolen from http://www.iicns.com/ -->
 <link rel="apple-touch-icon-precomposed" href="s256_mzm.euoiprzs.png" />  
 <link rel="icon" href="favicon.ico" type="image/x-icon">
@@ -12,68 +33,90 @@
 
 
 <script src="/socket.io/socket.io.js"></script>
-<script src="ender.js"></script>
 <script>
     var socket = io.connect(location.protocol + "//" + location.host);
 
     window.addEventListener("load", function() {
-        var volumeInput = null;
+        var volumeArea = null;
+        var volumeFill = null;
         var mutedInput = null;
-        function createOrUpdateVolume(data) {
-            if(volumeInput === null) {
-                volumeInput = document.createElement('input');
-                volumeInput.classList.add('volume');
-                volumeInput.type = 'range';
-                volumeInput.min = 0;
-                volumeInput.max = 100;
-                volumeInput.step = 0;
-                document.body.appendChild(volumeInput);
 
-                mutedInput = document.createElement('input');
-                mutedInput.type = 'checkbox';
-                document.body.appendChild(mutedInput);
+		var isUiMuted = null;
+		function setUiMuted(muted) {
+			volumeFill.style.backgroundColor = (muted ? 'gray' : 'red');
+			isUiMuted = muted;
+		}
+
+        function createOrUpdateVolume(data) {
+            if(volumeArea === null) {
+                volumeArea = document.createElement('div');
+                volumeArea.classList.add('volumeArea');
+                document.body.appendChild(volumeArea);
+
+                volumeFill = document.createElement('div');
+                volumeFill.classList.add('volumeFill');
+                volumeArea.appendChild(volumeFill);
 
                 function sendData() {
                     socket.emit('volume', getData());
                 }
-                volumeInput.addEventListener("change", sendData);
-                mutedInput.addEventListener("change", sendData);
+
+				var lastTouchEnd = 0;
+				function touchend(e) {
+					var time = new Date().getTime();
+					if(time - lastTouchEnd < 200) {
+						setUiMuted(!isUiMuted);
+						sendData();
+					}
+					lastTouchEnd = time;
+				}
+				document.addEventListener('touchend', touchend, false);
+				document.addEventListener('click', touchend, false);
+
+
+				function drag(e) {
+					var percent = 100*(1 - (e.pageY/window.innerHeight));
+					percent = Math.max(0, percent);
+					percent = Math.min(100, percent);
+					volumeFill.style.height = percent + "%";
+					sendData();
+				}
+
+				document.addEventListener('touchmove', function(e) {
+					// Prevent safari from doing its boucy
+					// you're-at-the-edge-of-the-page thing
+					e.preventDefault();
+					if(e.targetTouches.length == 1) {
+						drag(e.targetTouches[0]);
+					}
+				}, false);
+				document.addEventListener('mousedown', function(e) {
+					document.addEventListener('mousemove', drag, false);
+				}, false);
+				document.addEventListener('mouseup', function(e) {
+					document.removeEventListener('mousemove', drag, false);
+				}, false);
             }
 
-            volumeInput.value = data.volume;
-            mutedInput.checked = data.muted;
+			volumeFill.style.height = data.volume + "%";
+			setUiMuted(data.muted);
         }
 
         function getData() {
-            return { volume: parseInt(volumeInput.value), muted: mutedInput.checked };
+			var volume = parseInt(volumeFill.style.height);
+            return { volume: volume, muted: isUiMuted };
         }
 
         socket.on('volume', function(data) {
-            // TODO - don't update if ui is currently being changed...
+            // TODO - don't update if ui is currently being changed?
             createOrUpdateVolume(data);
         });
 
         socket.on('error', function(e) {
-            alert(e);
+            alert("Error! " + e);
         });
-
-        document.addEventListener('touchmove', function (e) {
-            if(e.target == volumeInput) {
-                // TODO - replace with custom ui components,
-                // the default ones aren't big enough...
-                return;
-            }
-            e.preventDefault();
-        }, false);
     });
 </script>
-
-<style type="text/css">
-.volume {
-    height: 100%;
-    -webkit-appearance: slider-vertical;
-}
-</style>
 
 </head>
 <body>

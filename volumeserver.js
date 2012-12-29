@@ -40,7 +40,7 @@ function setVolume(newVolume) {
                 assert(error !== null);
             }
         });
-    } else if(is.platform() == "linux") {
+    } else if(os.platform() == "linux") {
         var cmd = "amixer set Master " + newVolume.volume + "%";
         cmd += " " + (newVolume.muted ? "mute" : "unmute");
         exec(cmd, function(error, stdout, stderr) {
@@ -103,7 +103,11 @@ io.sockets.on('connection', function (socket) {
 			setVolume(data);
 			pushVolume();
 		} catch(e) {
-			socket.emit('error', e);
+			if(typeof e == "string") {
+				socket.emit('error', e);
+			} else {
+				throw e;
+			}
 		}
 	});
 });
