@@ -33,7 +33,6 @@ int _tmain(int argc, _TCHAR* argv[])
 			changeMute = true;
 			newMute = false;
 		} else {
-			puts("YOYOYO");//<<<
 			wstringstream ss(argv[1]);
 			ss >> newVolume;
 		}
@@ -64,6 +63,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		printf(" muted");
 	}
 	printf("\n");
+    fflush(stdout);
 
 	if(newVolume != -1) {
 		endpointVolume->SetMasterVolumeLevelScalar((float) newVolume, NULL);

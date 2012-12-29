@@ -28,35 +28,72 @@ function setVolume(newVolume) {
 	if(typeof newVolume.muted != "boolean") {
 		throw "muted (" + newVolume.muted + ") must be a boolean, not " + (typeof newVolume.muted);
 	}
-	var cmd = "amixer set Master " + newVolume.volume + "% ";
-	cmd += newVolume.muted ? "mute" : "unmute";
-	exec(cmd, function(error, stdout, stderr) {
-		if(error !== null) {
-			console.log('exec error: ' + error);
-			console.log('stdout: ' + stdout);
-			console.log('stderr: ' + stderr);
-			assert(error !== null);
-		}
-	});
+
+    if(os.platform() == "win32") {
+        var cmd = "VolCuntWin.exe " + (newVolume.volume/100.0);
+        cmd += " " + (newVolume.muted ? "mute" : "unmute");
+        exec(cmd, function(error, stdout, stderr) {
+            if(error !== null) {
+                console.log('exec error: ' + error);
+                console.log('stdout: ' + stdout);
+                console.log('stderr: ' + stderr);
+                assert(error !== null);
+            }
+        });
+    } else if(is.platform() == "linux") {
+        var cmd = "amixer set Master " + newVolume.volume + "%";
+        cmd += " " + (newVolume.muted ? "mute" : "unmute");
+        exec(cmd, function(error, stdout, stderr) {
+            if(error !== null) {
+                console.log('exec error: ' + error);
+                console.log('stdout: ' + stdout);
+                console.log('stderr: ' + stderr);
+                assert(error !== null);
+            }
+        });
+    } else {
+        assert(false);
+    }
 }
 
 function getVolume(callback) {
-	exec("amixer get Master", function(error, stdout, stderr) {
-		if(error !== null) {
-			console.log('exec error: ' + error);
-			console.log('stdout: ' + stdout);
-			console.log('stderr: ' + stderr);
-			assert(error !== null);
-		}
-		var match = /Front Left: .*\[(\d+)%\] \[(.*)\]/.exec(stdout);
-		assert(match);
+    if(os.platform() == "win32") {
+        exec("VolCuntWin.exe", function(error, stdout, stderr) {
+            if(error !== null) {
+                console.log('exec error: ' + error);
+                console.log('stdout: ' + stdout);
+                console.log('stderr: ' + stderr);
+                assert(error !== null);
+            }
+            var match = /([^ ]*)( muted)?/.exec(stdout);
+            assert(match);
 
-		var newVolume = {};
-		newVolume.volume = parseInt(match[1]);
-		assert(match[2] == 'off' || match[2] == 'on');
-		newVolume.muted = match[2] == 'off';
-		callback(newVolume);
-	});
+            var newVolume = {};
+            newVolume.volume = 100*parseFloat(match[1]);
+            newVolume.muted = false;
+            if(match[2]) {
+                newVolume.muted = true;
+            }
+            callback(newVolume);
+        });
+    } else if(os.platform() == "linux") {
+        exec("amixer get Master", function(error, stdout, stderr) {
+            if(error !== null) {
+                console.log('exec error: ' + error);
+                console.log('stdout: ' + stdout);
+                console.log('stderr: ' + stderr);
+                assert(error !== null);
+            }
+            var match = /Front Left: .*\[(\d+)%\] \[(.*)\]/.exec(stdout);
+            assert(match);
+
+            var newVolume = {};
+            newVolume.volume = parseInt(match[1]);
+            assert(match[2] == 'off' || match[2] == 'on');
+            newVolume.muted = match[2] == 'off';
+            callback(newVolume);
+        });
+    }
 }
 
 io.sockets.on('connection', function (socket) {
