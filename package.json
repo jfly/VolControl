@@ -1,0 +1,15 @@
+{
+  "author": "Jeremy Fleischman <jeremyfleischman@gmail.com>",
+  "name": "VolCunt",
+  "version": "0.0.1",
+  "main": "volumeserver.js",
+  "dependencies": {},
+  "devDependencies": {},
+  "optionalDependencies": {},
+  "engines": {
+    "node": "*"
+  },
+  "repository": {
+    "url": "git@github.com:jfly/VolCunt.git"
+  }
+}
