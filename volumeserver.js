@@ -3,12 +3,27 @@ var os = require('os');
 var send = require('send');
 var exec = require('child_process').exec;
 var assert = require('assert');
+var fs = require('fs');
 
 var app = http.createServer(function(req, res){
   send(req, req.url).root('www').pipe(res);
 });
 
-app.listen(8080);
+var default_config = require('./default_config');
+var custom_config = {};
+
+var default_config = require('./default_config');
+
+var custom_config = {};
+if(fs.existsSync("./config.js")) {
+    custom_config = require('./config');
+}
+function config(key) {
+    return custom_config[key] || default_config[key];
+}
+
+app.listen(config('port'));
+console.log("Listening on " + config('port'));
 
 var io = require('socket.io').listen(app);
 
