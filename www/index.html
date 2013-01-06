@@ -24,6 +24,19 @@ body {
 
     width: 100%;
 }
+
+.volumeConfig {
+    height: 10px;
+    background-color: black;
+}
+
+.volumeStatus {
+    background-color: red;
+}
+
+.volumeMuted {
+    background-color: gray;
+}
 </style>
 
 <!-- Stolen from http://www.iicns.com/ -->
@@ -34,16 +47,29 @@ body {
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
+
     var socket = io.connect(location.protocol + "//" + location.host);
 
     window.addEventListener("load", function() {
         var volumeArea = null;
-        var volumeFill = null;
+        var volumeConfig = null;
+        var volumeStatus = null;
         var mutedInput = null;
 
-		var isUiMuted = null;
+		var isUiMuted = false;
 		function setUiMuted(muted) {
-			volumeFill.style.backgroundColor = (muted ? 'gray' : 'red');
+            if(muted) {
+                volumeStatus.classList.add('volumeMuted');
+
+                // TODO - stupid ios6 on my phone's classList doesn't work!
+                volumeStatus.className = "volumeStatus volumeFill volumeMuted";
+            } else {
+                volumeStatus.classList.remove('volumeMuted');
+
+                // TODO - stupid ios6 on my phone's classList doesn't work!
+                volumeStatus.className = "volumeStatus volumeFill";
+            }
+
 			isUiMuted = muted;
 		}
 
@@ -53,9 +79,15 @@ body {
                 volumeArea.classList.add('volumeArea');
                 document.body.appendChild(volumeArea);
 
-                volumeFill = document.createElement('div');
-                volumeFill.classList.add('volumeFill');
-                volumeArea.appendChild(volumeFill);
+                volumeStatus = document.createElement('div');
+                volumeStatus.classList.add('volumeStatus');
+                volumeStatus.classList.add('volumeFill');
+                volumeArea.appendChild(volumeStatus);
+
+                volumeConfig = document.createElement('div');
+                volumeConfig.classList.add('volumeConfig');
+                volumeConfig.classList.add('volumeFill');
+                volumeArea.appendChild(volumeConfig);
 
                 function sendData() {
                     socket.emit('volume', getData());
@@ -78,7 +110,7 @@ body {
 					var percent = 100*(1 - (e.pageY/window.innerHeight));
 					percent = Math.max(0, percent);
 					percent = Math.min(100, percent);
-					volumeFill.style.height = percent + "%";
+					volumeConfig.style.bottom = parseInt(percent) + "%";
 					sendData();
 				}
 
@@ -96,20 +128,41 @@ body {
 				document.addEventListener('mouseup', function(e) {
 					document.removeEventListener('mousemove', drag, false);
 				}, false);
+
+                if(!data.config) {
+                    // TODO - comment <<<
+                    data.config = data.status;
+                }
             }
 
-			volumeFill.style.height = data.volume + "%";
-			setUiMuted(data.muted);
+			volumeStatus.style.height = data.status.volume + "%";
+            if(data.config) {
+                volumeConfig.style.bottom = data.config.volume + "%";
+            }
+			setUiMuted((data.config || data.status).muted);
         }
 
         function getData() {
-			var volume = parseInt(volumeFill.style.height);
+			var volume = parseInt(volumeConfig.style.bottom);
             return { volume: volume, muted: isUiMuted };
         }
 
         socket.on('volume', function(data) {
-            // TODO - don't update if ui is currently being changed?
+            if(data.config && data.config.whoDidIt == myId) {
+                // THIS IS SOME OF THE WORST CODE I HAVE EVER WRITTEN, BUT I WANT TO READ TOWERS OF MIDNIGHT, AND THIS ACTUALLY DOES WORK, SO I'M COMMITTING THIS SHIT GOD HAVE MERCY
+                // TODO - comment! <<<
+                if(data.status) {
+                    console.log(data.status);//<<<
+                    console.log(data.config);//<<<
+                    data.status.muted = data.config.muted;
+                }
+                data.config = null;
+            }
             createOrUpdateVolume(data);
+        });
+        var myId = null;
+        socket.on('connected', function(newId) {
+            myId = newId;
         });
 
         socket.on('error', function(e) {
