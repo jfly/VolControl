@@ -1,6 +1,6 @@
 {
   "author": "Jeremy Fleischman <jeremyfleischman@gmail.com>",
-  "name": "VolCunt",
+  "name": "VolControl",
   "version": "0.0.1",
   "main": "volumeserver.js",
   "dependencies": {
@@ -13,6 +13,6 @@
     "node": "*"
   },
   "repository": {
-    "url": "git@github.com:jfly/VolCunt.git"
+    "url": "git@github.com:jfly/VolControl.git"
   }
 }

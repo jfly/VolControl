@@ -42,7 +42,7 @@ function portableSetVolume(volume, callback) {
 	}
 
     if(os.platform() == "win32") {
-        var cmd = "VolCuntWin.exe " + (volume.volume/100.0);
+        var cmd = "VolControlWin.exe " + (volume.volume/100.0);
         cmd += " " + (volume.muted ? "mute" : "unmute");
         exec(cmd, callback);
     } else if(os.platform() == "linux") {
@@ -84,7 +84,7 @@ function setVolume(newVolume) {
 
 function getVolume(callback) {
     if(os.platform() == "win32") {
-        exec("VolCuntWin.exe", function(error, stdout, stderr) {
+        exec("VolControlWin.exe", function(error, stdout, stderr) {
             if(error !== null) {
                 console.log('exec error: ' + error);
                 console.log('stdout: ' + stdout);
